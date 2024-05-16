@@ -104,3 +104,28 @@ named_sem_no_unlink: named_sem_no_unlink.c
 	-$(CC) -o $@ $^
 	-./$@
 	-rm ./$@
+
+thread_pool_test: thread_pool_test.c
+	-$(CC) -o $@ $^ `pkg-config --cflags --libs glib-2.0`
+	-./$@
+	-rm ./$@
+
+pthread_detach_test: pthread_detach_test.c
+	-$(CC) -o $@ $^
+	-./$@
+	-rm ./$@
+
+pthread_cancel_deferred_test: pthread_cancel_deferred_test.c
+	-$(CC) -o $@ $^
+	-./$@
+	-rm ./$@
+
+pthread_cancel_async_test: pthread_cancel_async_test.c
+	-$(CC) -o $@ $^
+	-./$@
+	-rm ./$@
+
+pthread_cancel_disabled_test: pthread_cancel_disabled_test.c
+	-$(CC) -o $@ $^
+	-./$@
+	-rm ./$@
