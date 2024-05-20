@@ -11,19 +11,22 @@
 #include <string.h>
 #include <errno.h>
 
+pid_t pid;
+
+int is_shutdown = 0;
+
 void signal_handler(int sig)
 {
     switch (sig)
     {
     case SIGHUP:
-        // Handle hang-up signal
-        syslog(LOG_WARNING, "Received SIGHUP signal.");
+        syslog(LOG_WARNING, "收到SIGHUP信号...");
         break;
     case SIGTERM:
-    case SIGKILL:
-        // Handle termination signal
-        syslog(LOG_INFO, "Daemon exiting");
-        exit(0);
+        syslog(LOG_NOTICE, "接收到终止信号，准备退出守护进程...");
+        syslog(LOG_NOTICE, "向子进程发送SIGTERM信号...");
+        is_shutdown = 1;
+        kill(pid, SIGTERM);
         break;
     default:
         syslog(LOG_INFO, "Received unhandled signal");
@@ -46,10 +49,9 @@ void daemonize()
     if (setsid() < 0)
         exit(EXIT_FAILURE);
 
-    // 处理 SIGHUP、SIGTERM、SIGKILL 信号
+    // 处理 SIGHUP、SIGTERM 信号
     signal(SIGHUP, signal_handler);
     signal(SIGTERM, signal_handler);
-    signal(SIGKILL, signal_handler);
 
     pid = fork();
 
@@ -80,12 +82,16 @@ int main()
 
     while (1)
     {
-        pid_t pid = fork();
+        pid = fork();
 
         if (pid > 0)
         {
             syslog(LOG_INFO, "守护进程正在监听服务端进程...");
             waitpid(-1, NULL, 0);
+            if (is_shutdown) {
+                syslog(LOG_NOTICE, "子进程已被回收，守护进程退出");
+                exit(EXIT_SUCCESS);
+            }
             syslog(LOG_ERR, "服务端进程终止，3s后重启...");
             sleep(3);
         }
@@ -111,7 +117,6 @@ int main()
             syslog(LOG_ERR, "子进程fork失败");
         }
     }
-
-    closelog();
+    
     return EXIT_SUCCESS;
 }
