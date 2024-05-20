@@ -11,28 +11,35 @@
 #include <signal.h>
 #include <syslog.h>
 
-void zombie_dealer(int sig) {
+void zombie_dealer(int sig)
+{
     pid_t pid;
     int status;
     char buf[1024];
     memset(buf, 0, 1024);
     // 一个SIGCHLD可能对应多个子进程的退出
     // 使用while循环回收所有退出的子进程，避免僵尸进程的出现
-    while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
-        if (WIFEXITED(status)) {
+    while ((pid = waitpid(-1, &status, WNOHANG)) > 0)
+    {
+        if (WIFEXITED(status))
+        {
             sprintf(buf, "子进程: %d 以 %d 状态正常退出，已被回收\n", pid, WEXITSTATUS(status));
             syslog(LOG_INFO, "%s", buf);
-        } else if (WIFSIGNALED(status)) {
+        }
+        else if (WIFSIGNALED(status))
+        {
             sprintf(buf, "子进程: %d 被 %d 信号杀死，已被回收\n", pid, WTERMSIG(status));
             syslog(LOG_INFO, "%s", buf);
-        } else {
-            sprintf(buf,"子进程: %d 因其它原因退出，已被回收\n", pid);
+        }
+        else
+        {
+            sprintf(buf, "子进程: %d 因其它原因退出，已被回收\n", pid);
             syslog(LOG_WARNING, "%s", buf);
         }
     }
 }
 
-void *read_from_client_then_write(void *argv)
+void read_from_client_then_write(void *argv)
 {
     int client_fd = *(int *)argv;
 
@@ -51,7 +58,7 @@ void *read_from_client_then_write(void *argv)
         syslog(LOG_ERR, "%s", log_buf);
         shutdown(client_fd, SHUT_WR);
         close(client_fd);
-        return NULL;
+        return;
     }
 
     // 判断内存是否分配成功
@@ -63,7 +70,7 @@ void *read_from_client_then_write(void *argv)
         free(read_buf);
         shutdown(client_fd, SHUT_WR);
         close(client_fd);
-        return NULL;
+        return;
     }
 
     while ((count = recv(client_fd, read_buf, 1024, 0)))
@@ -72,7 +79,7 @@ void *read_from_client_then_write(void *argv)
         {
             syslog(LOG_ERR, "server recv error");
         }
-        sprintf(log_buf, "服务端pid: %d: reveive message from client_fd: %d: %s\n", getpid(), client_fd, read_buf);
+        sprintf(log_buf, "服务端pid: %d: reveive message from client_fd: %d: %s", getpid(), client_fd, read_buf);
         syslog(LOG_INFO, "%s", log_buf);
         memset(log_buf, 0, 1024);
 
@@ -93,7 +100,7 @@ void *read_from_client_then_write(void *argv)
     free(read_buf);
     free(write_buf);
 
-    return NULL;
+    return;
 }
 
 int main(int argc, char const *argv[])
@@ -149,8 +156,7 @@ int main(int argc, char const *argv[])
         {
             // 子进程不需要处理sockfd，释放文件描述符，使其引用计数减一
             close(sockfd);
-            sprintf(log_buf, "与客户端 from %s at PORT %d 文件描述符 %d 建立连接\n",
-                   inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), client_fd);
+            sprintf(log_buf, "与客户端 from %s at PORT %d 文件描述符 %d 建立连接\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), client_fd);
             syslog(LOG_INFO, "%s", log_buf);
             memset(log_buf, 0, 1024);
 

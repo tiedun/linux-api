@@ -1,3 +1,5 @@
+.PHONY: tcp_clean
+tcp_executables:=tcp_server tcp_client
 CC:=gcc
 
 tcp_server: tcp_server.c
@@ -6,7 +8,10 @@ tcp_server: tcp_server.c
 tcp_client: tcp_client.c
 	$(CC) -o $@ $^
 
-daemon_test: daemon_test.c tcp_server tcp_client
+tcp_clean:
+	-rm ./$(word 1, $(tcp_executables)) ./$(word 2, $(tcp_executables))
+
+daemon_test: daemon_test.c tcp_clean tcp_server tcp_client
 	-$(CC) -o $@ $<
 	-./$@
-	-rm ./$@ ./$(word 2, $^) ./$(word 3, $^)
+	-rm ./$@
