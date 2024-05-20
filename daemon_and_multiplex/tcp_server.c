@@ -11,6 +11,8 @@
 #include <signal.h>
 #include <syslog.h>
 
+int sockfd;
+
 void zombie_dealer(int sig)
 {
     pid_t pid;
@@ -37,6 +39,17 @@ void zombie_dealer(int sig)
             syslog(LOG_WARNING, "%s", buf);
         }
     }
+}
+
+void sigterm_handler(int sig) {
+    syslog(LOG_NOTICE, "服务端接收到守护进程发出的SIGTERM，准备退出...");
+    syslog(LOG_NOTICE, "释放sockfd");
+    close(sockfd);
+    syslog(LOG_NOTICE, "释放syslog连接，服务端进程终止");
+    closelog();
+
+    // 退出
+    exit(EXIT_SUCCESS);
 }
 
 void read_from_client_then_write(void *argv)
@@ -105,7 +118,7 @@ void read_from_client_then_write(void *argv)
 
 int main(int argc, char const *argv[])
 {
-    int sockfd, temp_result;
+    int temp_result;
 
     struct sockaddr_in server_addr, client_addr;
 
@@ -132,6 +145,8 @@ int main(int argc, char const *argv[])
 
     // 注册信号处理函数，处理SIGCHLD信号，避免僵尸进程出现
     signal(SIGCHLD, zombie_dealer);
+    // 处理SIGTERM函数，以优雅退出
+    signal(SIGTERM, sigterm_handler);
 
     char log_buf[1024];
     memset(log_buf, 0, 1024);
@@ -172,9 +187,6 @@ int main(int argc, char const *argv[])
             exit(EXIT_SUCCESS);
         }
     }
-
-    syslog(LOG_NOTICE, "释放资源\n");
-    close(sockfd);
 
     return 0;
 }

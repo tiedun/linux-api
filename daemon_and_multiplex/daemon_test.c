@@ -33,7 +33,7 @@ void signal_handler(int sig)
     }
 }
 
-void daemonize()
+void my_daemonize()
 {
     pid_t pid;
 
@@ -78,7 +78,7 @@ void daemonize()
 
 int main()
 {
-    daemonize();
+    my_daemonize();
 
     while (1)
     {
@@ -89,7 +89,8 @@ int main()
             syslog(LOG_INFO, "守护进程正在监听服务端进程...");
             waitpid(-1, NULL, 0);
             if (is_shutdown) {
-                syslog(LOG_NOTICE, "子进程已被回收，守护进程退出");
+                syslog(LOG_NOTICE, "子进程已被回收，即将关闭syslog连接，守护进程退出");
+                closelog();
                 exit(EXIT_SUCCESS);
             }
             syslog(LOG_ERR, "服务端进程终止，3s后重启...");
