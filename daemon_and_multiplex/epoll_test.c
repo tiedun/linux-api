@@ -182,6 +182,7 @@ int main(int argc, char const *argv[])
     }
 
     printf("释放资源\n");
+    close(epollfd);
     close(sockfd);
     free(read_buf);
     free(write_buf);
